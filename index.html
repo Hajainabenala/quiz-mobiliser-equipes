@@ -44,6 +44,8 @@
   /* BARRE DU HAUT */
   .topbar{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
   .pill{background:rgba(255,255,255,.16); padding:8px 14px; border-radius:30px; font-weight:800; font-size:14px;}
+  .quit{background:rgba(0,0,0,.28); color:#fff; border:none; border-radius:30px; padding:8px 14px; font-weight:800; font-size:14px; cursor:pointer;}
+  .quit:active{transform:translateY(2px);}
   .timer{
     width:56px; height:56px; border-radius:50%; background:#fff; color:#46178f;
     display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:900;
@@ -119,9 +121,10 @@
   <!-- ÉCRAN QUESTION -->
   <section id="play" class="screen">
     <div class="topbar">
+      <button class="quit" id="quitBtn" onclick="quitGame()">✕ Quitter</button>
       <span class="pill" id="qcount">1 / 10</span>
       <span class="pill" id="scorePill">⭐ 0</span>
-      <div class="timer" id="timer">20</div>
+      <div class="timer" id="timer">30</div>
     </div>
     <div class="progress"><div id="bar"></div></div>
     <div class="theme" id="qtheme"></div>
@@ -354,7 +357,7 @@ const QUESTIONS = [
 
 /* ====================== LOGIQUE DU JEU ====================== */
 let pool=[], idx=0, score=0, answered=false, timeLeft=0, timer=null, results=[];
-const QTIME=20, MAXPTS=1000;
+const QTIME=30, MAXPTS=1000;
 const $=id=>document.getElementById(id);
 const ICONS=['▲','◆','●','■'];
 
@@ -392,6 +395,15 @@ function start(mode){
 }
 
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');}
+
+function quitGame(){
+  if(!confirm('Quitter la partie ? Ta progression sera perdue.')) return;
+  clearInterval(timer);
+  pool=[]; idx=0; score=0; results=[]; answered=false;
+  $('themeBtns').style.display='none';
+  show('home');
+  window.scrollTo(0,0);
+}
 
 function render(){
   answered=false;

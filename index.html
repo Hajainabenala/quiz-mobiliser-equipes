@@ -491,7 +491,7 @@ function start(mode){
   if(!name){$('pseudo').focus();$('pseudo').placeholder='👉 Écris ton prénom d\'abord !';return;}
   pool=(mode==='all'?[...QUESTIONS]:QUESTIONS.filter(q=>q.t===mode));
   pool=shuffle(pool);
-  if(mode==='all') pool=pool.slice(0,20); // partie de 20 questions au hasard
+  if(mode==='all') pool=pool.slice(0,15); // partie de 15 questions au hasard
   // mélange les réponses de chaque question
   pool=pool.map(q=>{
     const opts=q.a.map((txt,i)=>({txt,ok:i===q.c}));

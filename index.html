@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Quiz — Mobiliser les équipes</title>
+<style>
+  :root{
+    --rouge:#e21b3c; --bleu:#1368ce; --jaune:#d89e00; --vert:#26890c;
+    --fond:#46178f; --fond2:#310a65;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:'Segoe UI',Roboto,system-ui,sans-serif;
+    background:linear-gradient(160deg,var(--fond),var(--fond2));
+    color:#fff; min-height:100vh; overflow-x:hidden;
+    display:flex; flex-direction:column;
+  }
+  .wrap{flex:1; display:flex; flex-direction:column; max-width:760px; width:100%; margin:0 auto; padding:16px;}
+  .screen{display:none; flex:1; flex-direction:column; animation:fade .35s ease;}
+  .screen.active{display:flex;}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* ACCUEIL */
+  .hero{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:18px;}
+  .logo{font-size:clamp(28px,7vw,46px); font-weight:900; line-height:1.1; letter-spacing:-1px;}
+  .logo span{display:block; font-size:.5em; font-weight:600; opacity:.85; margin-top:8px;}
+  .sub{opacity:.85; font-size:15px; max-width:440px;}
+  input[type=text]{
+    width:100%; max-width:380px; padding:16px; border:none; border-radius:14px;
+    font-size:18px; text-align:center; font-weight:700; color:#222;
+  }
+  .btn{
+    border:none; border-radius:14px; padding:16px 28px; font-size:18px; font-weight:800;
+    cursor:pointer; color:#fff; background:#000; transition:transform .08s, filter .15s;
+    box-shadow:0 5px 0 rgba(0,0,0,.35); width:100%; max-width:380px;
+  }
+  .btn:active{transform:translateY(3px); box-shadow:0 2px 0 rgba(0,0,0,.35);}
+  .btn.primary{background:#1fd286; color:#06371f;}
+  .btn.ghost{background:rgba(255,255,255,.15); box-shadow:none;}
+  .modes{display:flex; flex-direction:column; gap:10px; width:100%; max-width:380px;}
+
+  /* BARRE DU HAUT */
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;}
+  .pill{background:rgba(255,255,255,.16); padding:8px 14px; border-radius:30px; font-weight:800; font-size:14px;}
+  .timer{
+    width:56px; height:56px; border-radius:50%; background:#fff; color:#46178f;
+    display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:900;
+    flex-shrink:0;
+  }
+  .timer.warn{background:var(--rouge); color:#fff; animation:pulse .5s infinite alternate;}
+  @keyframes pulse{to{transform:scale(1.12)}}
+
+  /* PROGRESSION */
+  .progress{height:8px; background:rgba(255,255,255,.2); border-radius:8px; overflow:hidden; margin-bottom:18px;}
+  .progress>div{height:100%; background:#1fd286; width:0; transition:width .3s;}
+
+  .theme{font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:1px; opacity:.8; margin-bottom:6px;}
+  .question{
+    background:#fff; color:#1a1a2e; border-radius:18px; padding:22px;
+    font-size:clamp(18px,4.2vw,24px); font-weight:800; line-height:1.3;
+    text-align:center; margin-bottom:18px; min-height:90px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .answers{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:auto;}
+  @media(max-width:430px){.answers{grid-template-columns:1fr;}}
+  .ans{
+    border:none; border-radius:14px; padding:18px 16px; font-size:16px; font-weight:800;
+    color:#fff; cursor:pointer; text-align:left; display:flex; align-items:center; gap:12px;
+    min-height:74px; box-shadow:0 5px 0 rgba(0,0,0,.28); transition:transform .08s, opacity .2s;
+  }
+  .ans:active{transform:translateY(3px);}
+  .ans .ic{font-size:22px; flex-shrink:0;}
+  .ans.c0{background:var(--rouge);} .ans.c1{background:var(--bleu);}
+  .ans.c2{background:var(--jaune);} .ans.c3{background:var(--vert);}
+  .ans.dim{opacity:.35;}
+  .ans.good{outline:5px solid #fff; opacity:1;}
+  .ans.bad{opacity:.45; filter:grayscale(.4);}
+  .answers.locked .ans{cursor:default;}
+
+  /* FEEDBACK */
+  .feedback{text-align:center; margin-top:14px;}
+  .verdict{font-size:26px; font-weight:900; margin-bottom:6px;}
+  .verdict.ok{color:#1fd286;} .verdict.no{color:#ff7a90;}
+  .explain{background:rgba(255,255,255,.12); border-radius:12px; padding:14px; font-size:15px; line-height:1.45; margin:12px 0;}
+  .gain{font-weight:800; opacity:.9;}
+
+  /* RESULTATS */
+  .result{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px;}
+  .medal{font-size:72px;}
+  .bigscore{font-size:clamp(40px,12vw,72px); font-weight:900; color:#1fd286; line-height:1;}
+  .grade{font-size:22px; font-weight:800;}
+  .breakdown{width:100%; max-width:420px; text-align:left; background:rgba(0,0,0,.18); border-radius:14px; padding:8px; margin-top:6px;}
+  .row{display:flex; justify-content:space-between; padding:9px 12px; border-radius:8px; font-size:14px; font-weight:700;}
+  .row:nth-child(odd){background:rgba(255,255,255,.06);}
+  .row .ko{color:#ff7a90;} .row .ok{color:#1fd286;}
+  .foot{text-align:center; font-size:12px; opacity:.6; padding:8px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ÉCRAN ACCUEIL -->
+  <section id="home" class="screen active">
+    <div class="hero">
+      <div class="logo">🚀 MOBILISER LES ÉQUIPES<span>Quiz de révision — BLOC 4 · Management des équipes</span></div>
+      <p class="sub">Réponds vite et juste ! Plus tu réponds rapidement, plus tu gagnes de points. Prêt·e ?</p>
+      <input type="text" id="pseudo" placeholder="Ton prénom / pseudo" maxlength="18" autocomplete="off">
+      <div class="modes">
+        <button class="btn primary" onclick="start('all')">▶ Jouer (toutes les leçons)</button>
+        <button class="btn ghost" onclick="openThemes()">🎯 Choisir une leçon</button>
+      </div>
+      <div id="themeBtns" class="modes" style="display:none"></div>
+    </div>
+    <p class="foot">Astuce : ouvre ce fichier dans le navigateur de ton téléphone. Chacun joue sur son propre appareil.</p>
+  </section>
+
+  <!-- ÉCRAN QUESTION -->
+  <section id="play" class="screen">
+    <div class="topbar">
+      <span class="pill" id="qcount">1 / 10</span>
+      <span class="pill" id="scorePill">⭐ 0</span>
+      <div class="timer" id="timer">20</div>
+    </div>
+    <div class="progress"><div id="bar"></div></div>
+    <div class="theme" id="qtheme"></div>
+    <div class="question" id="qtext"></div>
+    <div class="answers" id="answers"></div>
+    <div class="feedback" id="feedback" style="display:none">
+      <div class="verdict" id="verdict"></div>
+      <div class="gain" id="gain"></div>
+      <div class="explain" id="explain"></div>
+      <button class="btn primary" id="nextBtn" onclick="nextQuestion()">Continuer →</button>
+    </div>
+  </section>
+
+  <!-- ÉCRAN RÉSULTATS -->
+  <section id="end" class="screen">
+    <div class="result">
+      <div class="medal" id="medal">🏆</div>
+      <div class="bigscore" id="finalScore">0</div>
+      <div class="grade" id="grade"></div>
+      <p class="sub" id="recap"></p>
+      <div class="breakdown" id="breakdown"></div>
+      <button class="btn primary" onclick="location.reload()">🔄 Rejouer</button>
+    </div>
+    <p class="foot">Quiz généré à partir des cours « Mobiliser les équipes »</p>
+  </section>
+
+</div>
+
+<script>
+/* ====================== BANQUE DE QUESTIONS ======================
+   Issues des cours : Communication managériale, Objectifs, Motivation,
+   Gestion des tensions, Tableau de bord. */
+const QUESTIONS = [
+ {t:"Communication", q:"Quelles sont les 3 formes de communication managériale ?",
+  a:["Ascendante, descendante, transversale","Orale, écrite, visuelle","Interne, externe, mixte","Formelle, informelle, digitale"], c:0,
+  e:"Ascendante (collaborateurs → manager), descendante (hiérarchie → équipes) et transversale (entre pairs/services)."},
+
+ {t:"Communication", q:"L'assertivité, c'est avant tout…",
+  a:["S'exprimer sans agressivité et soutenir ses idées sans nier l'opinion de l'autre","Toujours avoir le dernier mot","Éviter tout conflit en se taisant","Imposer son point de vue avec fermeté"], c:0,
+  e:"Être assertif = se respecter ET respecter l'autre : franchise + ouverture, sans fuir, sans agresser, sans manipuler."},
+
+ {t:"Communication", q:"Parmi les styles relationnels, lequel correspond à « Je m'impose, même au détriment de l'autre » ?",
+  a:["Agressif","Passif","Manipulateur","Assertif"], c:0,
+  e:"Le comportement agressif cherche à dominer l'échange (violence verbale/psychologique, couper la parole…)."},
+
+ {t:"Communication", q:"Le comportement passif se traduit par la posture :",
+  a:["« Je ne m'autorise pas à dire non »","« Je contrôle l'autre sans qu'il le sache »","« Je m'impose à tout prix »","« Je me respecte et je respecte l'autre »"], c:0,
+  e:"Le passif fuit les situations tendues par peur du conflit ou du rejet, quitte à renoncer à ses besoins."},
+
+ {t:"Communication", q:"Chantage, culpabilisation et flatterie sont des formes typiques de quel comportement ?",
+  a:["Manipulateur","Assertif","Passif","Agressif"], c:0,
+  e:"Le manipulateur dissimule ses intentions et utilise la relation comme un moyen (« Si tu ne fais pas ça… »)."},
+
+ {t:"Écoute active", q:"Dans le processus d'écoute active, quel est le bon ordre ?",
+  a:["Faits → Émotions → Besoins → Solutions","Solutions → Faits → Besoins → Émotions","Émotions → Faits → Solutions → Besoins","Besoins → Solutions → Faits → Émotions"], c:0,
+  e:"On part des faits, puis on identifie les émotions, le besoin sous-jacent, et enfin la solution trouvée par l'interlocuteur."},
+
+ {t:"Écoute active", q:"Reflet, miroir, résumé et clarification sont des techniques de…",
+  a:["Reformulation","Questionnement fermé","Synchronisation","Feedback positif"], c:0,
+  e:"La reformulation (reflet, miroir, résumé, clarification) est un pilier de l'écoute active, avec silences et questionnements."},
+
+ {t:"Feedback / DESC", q:"Que signifie la méthode DESC ?",
+  a:["Décrire, Exprimer, Spécifier une solution, Conclure","Décider, Évaluer, Suivre, Contrôler","Définir, Échanger, Structurer, Communiquer","Diagnostiquer, Estimer, Sélectionner, Clôturer"], c:0,
+  e:"DESC = Décrire les faits, Exprimer son ressenti, Spécifier une solution, Conclure positivement (Bower, 1976)."},
+
+ {t:"Feedback / DESC", q:"Dans le DESC, mieux vaut utiliser le « Je » plutôt que le « Tu » car…",
+  a:["Cela ne met pas l'autre sur la défensive et en fait un partenaire de solution","C'est plus poli en entreprise","Cela permet d'éviter de parler des faits","Le « Tu » est interdit par la loi"], c:0,
+  e:"Le « Tu » met l'autre en position d'accusé ; le « Je » exprime son ressenti et invite à chercher ensemble une solution."},
+
+ {t:"Feedback / DESC", q:"Quelle précaution est ESSENTIELLE pour réussir un feedback DESC ?",
+  a:["Traiter un seul problème à la fois, en privé","Accumuler plusieurs reproches d'un coup","Le faire devant toute l'équipe","Réagir immédiatement sous le coup de l'émotion"], c:0,
+  e:"On agit rapidement mais au bon moment, sur UN seul problème, en privé, sans étaler tous ses reproches."},
+
+ {t:"Feedback / DESC", q:"Un bon feedback constructif doit surtout être…",
+  a:["Informatif : des faits précis et des pistes concrètes","Une appréciation générale et subjective","Improvisé sur le moment","Centré sur les défauts de la personne"], c:0,
+  e:"« Nourrir en retour » avec des informations factuelles plutôt que des jugements ; un feedback se prépare."},
+
+ {t:"Objectifs", q:"Dans la méthode SMART, que signifie le « M » ?",
+  a:["Mesurable","Motivant","Managérial","Maximal"], c:0,
+  e:"SMART = Spécifique, Mesurable, Atteignable, Réaliste (pertinent), Temporel."},
+
+ {t:"Objectifs", q:"L'outil QQOQCP sert principalement à…",
+  a:["Clarifier toutes les dimensions d'un objectif ou d'un projet","Calculer un chiffre d'affaires","Évaluer la performance d'un salarié","Gérer un conflit"], c:0,
+  e:"Qui ? Quoi ? Où ? Quand ? Comment ? Pourquoi ? — poser les bonnes questions pour cadrer le périmètre."},
+
+ {t:"Objectifs / RACI", q:"Dans la matrice RACI, le « A » désigne :",
+  a:["L'Autorité qui valide / approuve","La personne qui exécute la tâche","Celui qu'on consulte pour avis","Celui qu'on tient simplement informé"], c:0,
+  e:"R = Responsable (exécute), A = Autorité (valide), C = Consulté (expertise), I = Informé."},
+
+ {t:"Objectifs / RACI", q:"À quoi sert la matrice RACI dans une équipe ?",
+  a:["Clarifier qui fait quoi et éviter les zones floues","Calculer les salaires","Mesurer la satisfaction client","Planifier les congés"], c:0,
+  e:"Elle visualise les rôles (qui exécute, valide, est consulté, informé) pour éviter duplications et tensions."},
+
+ {t:"Objectifs", q:"Quels sont les 3 réflexes essentiels du manager pour piloter les résultats ?",
+  a:["Suivre régulièrement, ajuster rapidement, motiver/valoriser","Recruter, licencier, sanctionner","Planifier, déléguer, oublier","Contrôler, punir, contrôler encore"], c:0,
+  e:"Points courts et fréquents, correction des écarts, et reconnaissance pour maintenir l'engagement."},
+
+ {t:"Motivation", q:"La pyramide des 5 niveaux de besoins (physiologiques → accomplissement) est la théorie de…",
+  a:["Maslow","Herzberg","Deci & Ryan","Thomas-Kilmann"], c:0,
+  e:"Maslow (1954) : on satisfait d'abord les besoins de base avant de viser engagement et performance."},
+
+ {t:"Motivation", q:"Selon Herzberg, un bon salaire…",
+  a:["Évite la démotivation mais ne motive pas vraiment","Est le seul vrai moteur de motivation","N'a aucun effet sur les équipes","Remplace la reconnaissance"], c:0,
+  e:"Le salaire est un facteur d'hygiène : il limite l'insatisfaction. Seuls reconnaissance et contenu du travail motivent."},
+
+ {t:"Motivation", q:"La théorie de l'autodétermination (Deci & Ryan) repose sur 3 besoins :",
+  a:["Autonomie, compétence, lien social","Salaire, sécurité, statut","Pouvoir, contrôle, rendement","Vitesse, qualité, coût"], c:0,
+  e:"Motivation intrinsèque durable = autonomie (liberté de choix) + compétence (se sentir efficace) + lien social."},
+
+ {t:"Motivation", q:"Selon « The Human Deal » de Gartner, combien de leviers pour attirer/retenir les talents ?",
+  a:["5","3","7","10"], c:0,
+  e:"5 leviers : connexions plus profondes, flexibilité radicale, croissance personnelle, bien-être holistique, objectif partagé."},
+
+ {t:"Motivation", q:"Présentiel ou distanciel : que privilégie-t-on PLUTÔT à distance ?",
+  a:["Concentration et autonomie sur ses dossiers","Moments informels et célébrations","Créativité collective à plusieurs","Réunions de cohésion"], c:0,
+  e:"À distance : concentration, autonomie, gestion/administration. En présentiel : collectif, créativité, convivialité."},
+
+ {t:"RPS", q:"Selon le cours, le stress apparaît lorsqu'il existe…",
+  a:["Un déséquilibre entre les contraintes et les ressources","Trop de réunions","Un manque de café","Une absence totale de travail"], c:0,
+  e:"Stress = contraintes > ressources. Le manager repère les signaux, comprend, agit et oriente vers les bons relais."},
+
+ {t:"RPS", q:"Face aux RPS, le rôle du manager est de…",
+  a:["Repérer, comprendre, agir à son niveau et orienter vers les bons relais","Poser un diagnostic médical","Ignorer les signaux faibles","Gérer seul toutes les situations"], c:0,
+  e:"Le manager n'est pas un expert médical : il s'appuie sur DRH, médecine du travail, IRP/CHSCT, pairs."},
+
+ {t:"Conflits", q:"Quels sont les 3 grands types de conflits au travail ?",
+  a:["Personnels, interpersonnels, organisationnels","Internes, externes, mixtes","Mineurs, majeurs, critiques","Ouverts, fermés, latents"], c:0,
+  e:"Personnels (sphère privée), interpersonnels (entre collègues) et organisationnels (structure, objectifs, ressources)."},
+
+ {t:"Conflits", q:"Dans le modèle Thomas-Kilmann, quel style est « gagnant-gagnant » ?",
+  a:["La collaboration","L'affrontement","L'évitement","L'accommodement"], c:0,
+  e:"La collaboration cherche ensemble une solution satisfaisant les deux parties : résolution durable, relations renforcées."},
+
+ {t:"Conflits", q:"« Chaque partie fait des concessions pour trouver un terrain d'entente » : quel style ?",
+  a:["Le compromis","La collaboration","L'affrontement","L'évitement"], c:0,
+  e:"Le compromis : solution intermédiaire, efficace en cas d'urgence ou d'impasse, chacun obtient une partie de ce qu'il veut."},
+
+ {t:"Conflits", q:"L'affrontement (imposer sa solution) correspond à un style…",
+  a:["Gagnant-perdant","Gagnant-gagnant","Perdant-perdant","Neutre"], c:0,
+  e:"Style gagnant-perdant : une partie l'emporte au détriment de l'autre, peu coopératif et générateur de rancœurs."},
+
+ {t:"Tableau de bord", q:"Comment calcule-t-on le taux de réalisation ?",
+  a:["(Réalisé / Objectif) × 100","(Objectif / Réalisé) × 100","Réalisé − Objectif","Objectif × Réalisé"], c:0,
+  e:"Taux de réalisation = (Réalisé / Objectif) × 100. L'écart = Réalisé − Objectif."},
+
+ {t:"Tableau de bord", q:"CA réalisé 1 200, objectif 1 000 : quel est le taux de réalisation ?",
+  a:["120 %","20 %","83 %","12 %"], c:0,
+  e:"(1 200 / 1 000) × 100 = 120 % → écart positif de +200, performance favorable."},
+
+ {t:"Tableau de bord", q:"Combien d'indicateurs maximum recommande-t-on pour un bon tableau de bord ?",
+  a:["10 maximum","3 maximum","25 maximum","Aucune limite"], c:0,
+  e:"Règle : 1 indicateur = 1 objectif = 1 décision, 10 maximum, pour garder clarté et lisibilité."},
+
+ {t:"Tableau de bord", q:"Objectif de réclamations : 5 max, réalisé : 3. Ce résultat est…",
+  a:["Favorable (moins de réclamations que l'objectif)","Défavorable","Neutre","Impossible à évaluer"], c:0,
+  e:"Pour un indicateur indésirable, être SOUS l'objectif est bon : un écart négatif signe ici une amélioration."},
+
+ {t:"Communication", q:"Sur quoi un manager doit-il axer une communication efficace ?",
+  a:["Sur des faits","Sur des suppositions","Sur des rumeurs","Sur ses émotions du moment"], c:0,
+  e:"Communiquer efficacement = écoute active, empathie, adaptation à l'interlocuteur, maîtrise des émotions et propos centrés sur les FAITS."},
+
+ {t:"Communication", q:"Pour une information légale ou sensible (licenciement, rappel à l'ordre), quel outil est adapté ?",
+  a:["Courrier / mail officiel ou compte rendu signé","Un SMS rapide","Un post sur l'intranet","Un appel informel"], c:0,
+  e:"Objectif : traçabilité et sécurité juridique → écrit officiel signé. Le téléphone/chat sert plutôt à l'urgence."},
+
+ {t:"Communication", q:"Pour renforcer la cohésion et la culture d'équipe, quel outil privilégier ?",
+  a:["Séminaires et moments conviviaux","Mail officiel","SMS d'urgence","Planning partagé"], c:0,
+  e:"Cohésion & culture → séminaires, moments d'équipe (objectif : appartenance, motivation, intelligence collective)."},
+
+ {t:"Communication", q:"Pour transmettre une information urgente nécessitant une réactivité immédiate :",
+  a:["Téléphone, SMS, chat (Teams)","Compte rendu signé","Séminaire","Courrier postal"], c:0,
+  e:"Urgence = réactivité immédiate via téléphone/SMS/chat rapide."},
+
+ {t:"Feedback / DESC", q:"Par quoi doit-on commencer un feedback selon le schéma du cours ?",
+  a:["Par les points positifs (rester positif)","Par les reproches","Par la sanction","Par la conclusion"], c:0,
+  e:"Schéma : rapport → synchronisation → points positifs → piste d'amélioration → conclusion. On commence et finit positif."},
+
+ {t:"Feedback / DESC", q:"Quelle caractéristique décrit le feedback POSITIF ?",
+  a:["Continu, court, fréquent et régulier","Long et annuel","Rare et solennel","Toujours écrit et formel"], c:0,
+  e:"Le feedback positif est continu, court, peut être « à chaud », fréquent et régulier : il motive, rassure et valorise."},
+
+ {t:"Objectifs", q:"Que signifie le « T » de la méthode SMART ?",
+  a:["Temporel (limité dans le temps)","Technique","Total","Théorique"], c:0,
+  e:"SMART = Spécifique, Mesurable, Atteignable, Réaliste, Temporel (échéance définie)."},
+
+ {t:"Objectifs / RACI", q:"Dans RACI, qui participe par son expertise ou son avis sans rôle d'exécution ?",
+  a:["Le Consulté (C)","Le Responsable (R)","L'Autorité (A)","L'Informé (I)"], c:0,
+  e:"C = Consulté : on sollicite son avis/expertise. I = simplement tenu informé, sans rôle actif."},
+
+ {t:"Motivation", q:"Selon le psychologue Baumeister, combien de conditions donnent du sens à la vie/au travail ?",
+  a:["4","2","6","10"], c:0,
+  e:"4 conditions : avoir un but, se sentir efficace, agir conformément à ses valeurs, se sentir utile et avoir une valeur."},
+
+ {t:"Motivation", q:"Lequel de ces éléments est un levier de motivation cité dans le cours ?",
+  a:["Le sens et l'utilité du travail","La surcharge de tâches","Le manque d'autonomie","L'absence de feedback"], c:0,
+  e:"Leviers : sens/utilité, reconnaissance/feedback, rémunération/conditions, ambiance/cohésion, évolution, équilibre vie pro-perso, autonomie."},
+
+ {t:"Motivation", q:"Selon l'étude OpinionWay (2022), quelle part des talents vérifie en priorité le sens des missions avant de rejoindre une entreprise ?",
+  a:["32 %","10 %","75 %","50 %"], c:0,
+  e:"32 % des talents regardent d'abord l'intérêt et le sens des missions : le sens devient un critère majeur d'engagement."},
+
+ {t:"Motivation", q:"En présentiel, qu'est-ce qu'on privilégie PLUTÔT ?",
+  a:["Moments collectifs, informels et créativité","Tâches d'administration en autonomie","Concentration solitaire sur les dossiers","Suivi de plan d'action individuel"], c:0,
+  e:"Présentiel : collectif, informel, créativité, célébrations. À distance : concentration, autonomie, gestion."},
+
+ {t:"Conflits", q:"Lequel n'est PAS une cause principale de conflit selon le cours ?",
+  a:["Une bonne communication ouverte","Des problèmes de communication","Des différences de valeurs/personnalités","La concurrence pour les ressources"], c:0,
+  e:"Causes : problèmes de communication, différences de valeurs, concurrence pour les ressources, stress/pression. Une communication ouverte les PRÉVIENT."},
+
+ {t:"Conflits", q:"Quelle est une conséquence d'un conflit NON résolu ?",
+  a:["Hausse du turnover et baisse de motivation","Meilleure cohésion","Hausse de la productivité","Climat social apaisé"], c:0,
+  e:"Conflits non résolus → stress, baisse de productivité, hausse du turnover, climat social détérioré."},
+
+ {t:"Conflits", q:"« Ignorer le conflit ou le repousser » correspond à quel style Thomas-Kilmann ?",
+  a:["L'évitement","La collaboration","Le compromis","L'affrontement"], c:0,
+  e:"L'évitement : utile si le conflit est mineur ou pour laisser retomber les tensions, mais peut aggraver à long terme."},
+
+ {t:"Conflits", q:"« Céder pour préserver la paix » décrit quel style de gestion des conflits ?",
+  a:["L'accommodement","L'affrontement","La collaboration","L'évitement"], c:0,
+  e:"L'accommodement : utile pour un différend mineur ou gagner du temps, mais peut créer des frustrations s'il est trop utilisé."},
+
+ {t:"Évaluation", q:"L'évaluation de la performance se fait sur quels deux niveaux complémentaires ?",
+  a:["Individuelle et collective","Financière et juridique","Interne et externe","Verticale et horizontale"], c:0,
+  e:"Performance individuelle (contribution, compétences) + performance collective (efficacité de l'équipe, coopération)."},
+
+ {t:"Évaluation", q:"Lequel est un critère d'évaluation de la performance COLLECTIVE ?",
+  a:["La collaboration et la qualité de la coordination","Le salaire du manager","Le nombre de réunions","L'ancienneté individuelle"], c:0,
+  e:"Critères collectifs : atteinte des objectifs d'équipe, collaboration/communication, cohésion/climat, capacité d'adaptation."}
+];
+
+/* ====================== LOGIQUE DU JEU ====================== */
+let pool=[], idx=0, score=0, answered=false, timeLeft=0, timer=null, results=[];
+const QTIME=20, MAXPTS=1000;
+const $=id=>document.getElementById(id);
+const ICONS=['▲','◆','●','■'];
+
+function openThemes(){
+  const box=$('themeBtns');
+  if(box.style.display==='flex'){box.style.display='none';return;}
+  const themes=[...new Set(QUESTIONS.map(q=>q.t))];
+  box.innerHTML='';
+  themes.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='btn ghost';
+    b.textContent='📘 '+t+' ('+QUESTIONS.filter(q=>q.t===t).length+')';
+    b.onclick=()=>start(t);
+    box.appendChild(b);
+  });
+  box.style.display='flex';
+}
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function start(mode){
+  const name=$('pseudo').value.trim();
+  if(!name){$('pseudo').focus();$('pseudo').placeholder='👉 Écris ton prénom d\'abord !';return;}
+  pool=(mode==='all'?[...QUESTIONS]:QUESTIONS.filter(q=>q.t===mode));
+  pool=shuffle(pool);
+  if(mode==='all') pool=pool.slice(0,20); // partie de 20 questions au hasard
+  // mélange les réponses de chaque question
+  pool=pool.map(q=>{
+    const opts=q.a.map((txt,i)=>({txt,ok:i===q.c}));
+    shuffle(opts);
+    return {...q, opts};
+  });
+  idx=0; score=0; results=[];
+  show('play'); render();
+}
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');}
+
+function render(){
+  answered=false;
+  const q=pool[idx];
+  $('qcount').textContent=(idx+1)+' / '+pool.length;
+  $('scorePill').textContent='⭐ '+score;
+  $('qtheme').textContent=q.t;
+  $('qtext').textContent=q.q;
+  $('bar').style.width=((idx)/pool.length*100)+'%';
+  $('feedback').style.display='none';
+  const wrap=$('answers'); wrap.className='answers'; wrap.innerHTML='';
+  q.opts.forEach((o,i)=>{
+    const b=document.createElement('button');
+    b.className='ans c'+i;
+    b.innerHTML='<span class="ic">'+ICONS[i]+'</span><span>'+o.txt+'</span>';
+    b.onclick=()=>choose(i);
+    wrap.appendChild(b);
+  });
+  startTimer();
+}
+
+function startTimer(){
+  timeLeft=QTIME; updateTimer();
+  timer=setInterval(()=>{
+    timeLeft--; updateTimer();
+    if(timeLeft<=0){clearInterval(timer); if(!answered) choose(-1);}
+  },1000);
+}
+function updateTimer(){
+  const t=$('timer'); t.textContent=timeLeft;
+  t.classList.toggle('warn', timeLeft<=5);
+}
+
+function choose(i){
+  if(answered) return;
+  answered=true; clearInterval(timer);
+  const q=pool[idx];
+  const correct = i>=0 && q.opts[i].ok;
+  const gain = correct ? Math.round(MAXPTS*0.5 + MAXPTS*0.5*(timeLeft/QTIME)) : 0;
+  score+=gain;
+  results.push({theme:q.t, q:q.q, ok:correct});
+
+  const wrap=$('answers'); wrap.classList.add('locked');
+  [...wrap.children].forEach((b,j)=>{
+    if(q.opts[j].ok) b.classList.add('good');
+    else if(j===i) b.classList.add('bad');
+    else b.classList.add('dim');
+  });
+
+  $('verdict').textContent = correct ? '✅ Bonne réponse !' : (i<0?'⏰ Temps écoulé !':'❌ Raté !');
+  $('verdict').className='verdict '+(correct?'ok':'no');
+  $('gain').textContent = correct ? '+'+gain+' points' : '+0 point';
+  $('explain').innerHTML='💡 '+q.e;
+  $('nextBtn').textContent = (idx<pool.length-1)?'Continuer →':'Voir mon score 🏁';
+  $('scorePill').textContent='⭐ '+score;
+  $('bar').style.width=((idx+1)/pool.length*100)+'%';
+  $('feedback').style.display='block';
+  $('feedback').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function nextQuestion(){
+  idx++;
+  if(idx<pool.length) render();
+  else finish();
+}
+
+function finish(){
+  show('end');
+  const total=pool.length, good=results.filter(r=>r.ok).length;
+  const pct=Math.round(good/total*100);
+  $('finalScore').textContent=score+' pts';
+  $('grade').textContent=good+' / '+total+' bonnes réponses ('+pct+'%)';
+
+  let medal,msg;
+  if(pct>=90){medal='🏆';msg='Excellent ! Tu maîtrises le management des équipes.';}
+  else if(pct>=70){medal='🥇';msg='Très bien ! Quelques notions à revoir et c\'est parfait.';}
+  else if(pct>=50){medal='🥈';msg='Pas mal ! Reprends les leçons signalées ci-dessous.';}
+  else {medal='📚';msg='Courage ! Une relecture des cours s\'impose.';}
+  $('medal').textContent=medal; $('recap').textContent=msg;
+
+  // récap par thème
+  const themes={};
+  results.forEach(r=>{themes[r.theme]=themes[r.theme]||{ok:0,n:0}; themes[r.theme].n++; if(r.ok)themes[r.theme].ok++;});
+  const bd=$('breakdown'); bd.innerHTML='';
+  Object.keys(themes).forEach(t=>{
+    const d=themes[t], all=d.ok===d.n;
+    const row=document.createElement('div'); row.className='row';
+    row.innerHTML='<span>'+t+'</span><span class="'+(all?'ok':'ko')+'">'+d.ok+'/'+d.n+(all?' ✓':'')+'</span>';
+    bd.appendChild(row);
+  });
+}
+
+// Entrée clavier sur le pseudo
+$('pseudo').addEventListener('keydown',e=>{if(e.key==='Enter')start('all');});
+</script>
+</body>
+</html>
